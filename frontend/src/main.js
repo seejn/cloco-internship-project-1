@@ -15,6 +15,7 @@ import CreatePost from './pages/CreatePost.vue'
 import Profile from './pages/Profile.vue'
 
 import Toasts from './components/toasts/Toasts.vue'
+import FullViewPost from './components/posts/FullViewPost.vue'
 
 const routes = [
     { path: '/', component: LandingPage },
@@ -24,6 +25,8 @@ const routes = [
     { path: '/dashboard', component: Dashboard },
     { path: '/create-post', component: CreatePost },
     { path: '/profile', component: Profile },
+
+    { path: '/post/:post_id', component: FullViewPost}
 ]
 
 const router = createRouter({

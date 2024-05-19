@@ -10,12 +10,12 @@
             <div class="mt-4 flex items-center">
                 <img class="w-10 h-10 rounded-full object-cover" src="https://via.placeholder.com/100" alt="Author Image">
                 <div class="ml-3">
-                    <p class="text-gray-800 font-semibold">{{ post.user.firstname }} {{ post.user.lastname }}</p>
+                    <p class="text-gray-800 font-semibold">{{ post.user.fullname }}</p>
                     <p class="text-gray-600 text-sm">{{ post.created_at }}</p>
                 </div>
             </div>
             <div class="mt-4">
-                <a href="#" class="text-blue-600 hover:underline">Read more</a>
+                <RouterLink :to="'/post/' + post.id" class="text-blue-600 hover:underline">Read more</RouterLink>
             </div>
         </div>
         <!-- <Comment /> -->

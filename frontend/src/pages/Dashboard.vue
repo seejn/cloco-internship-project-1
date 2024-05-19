@@ -1,7 +1,6 @@
 <template>
     <Toasts />
     <UserNavBar />
-
     <div class="cards-collection py-4">
         <span v-for="post in posts">
             <Card :post="post" />
