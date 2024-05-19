@@ -41,12 +41,15 @@ class CustomUser(AbstractUser):
         db_table = "users"
 
 
+    def get_fullname(self):
+        return f"{self.first_name} {self.last_name}"
+
     def create_post(self, title, content):
-        self.post_set.create(title=title, content=content)
+        self.post.create(title=title, content=content)
         self.save()
 
     def get_posts(self):
-        return self.post_set.filter(user_id=self.id)
+        return self.post.all()
 
     def __str__(self):
         return self.email

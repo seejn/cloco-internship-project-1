@@ -10,14 +10,13 @@ class Post(models.Model):
     created_at = models.DateTimeField(default=datetime.now())
     is_deleted = models.BooleanField(default=False)
     like_count = models.IntegerField(default=0)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="post")
 
     class Meta:
         db_table="posts"
 
     def get_user(self):
-        user = CustomUser.objects.get(pk=self.user_id)
-        return user
+        return self.user
 
     def __str__(self):
         return self.title

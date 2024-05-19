@@ -69,4 +69,17 @@ def get_user_post(request):
     method = "GET"
     if not request.method == method:
         return JsonResponse({"message": "Not appropriate request method"}, status=405)
-    
+    return JsonResponse({"message": "get user post request success"}, status=200)
+
+
+def get_post(request, post_id):
+    try:
+        post = Post.objects.get(pk=post_id)
+        posted_by = post.user
+    except:
+        return JsonResponse({"message": "post not found"}, status=404)
+
+    post = PostSerializer(post)
+    posted_by = UserSerializer(posted_by)
+    post["posted_by"] = posted_by
+    return JsonResponse({"message": "Post", "data": post}, status=200)

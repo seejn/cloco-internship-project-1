@@ -56,8 +56,8 @@ def login_handle_cookie(request):
 
 
 def UserSerializer(obj):
-    fields = ["id", "email", "username", "firstname", "lastname", "last_login", "date_joined"]
-    values = [obj.id, obj.email, obj.username, obj.first_name, obj.last_name, obj.last_login, obj.date_joined]
+    fields = ["id", "email", "username", "fullname", "last_login", "date_joined"]
+    values = [obj.id, obj.email, obj.username, obj.get_fullname(), obj.last_login, obj.date_joined]
 
     # data = dict(zip(fields,values))
     data = {k:v for k,v in zip(fields,values)}
