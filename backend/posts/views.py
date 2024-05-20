@@ -1,10 +1,14 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
-import jwt, math, time
+from django.db.models import F
+
+import json, jwt, math, time
 
 from users.models import CustomUser
-from users.views import UserSerializer
+from posts.serializer import PostSerializer
+from users.serializer import UserSerializer
 from .models import Post, Comment
 
 
@@ -25,7 +29,7 @@ def login_required(func):
         try:
             payload = token_validation(request)
             if not payload:
-                return JsonResponse({"message": "User not Authorized"}, status=401)
+                return JsonResponse({"message": "Login again"}, status=401)
         except ExpiredSignatureError:
             response = JsonResponse({"message": "Token Expired"}, status=400)
             response.delete_cookie("access_token")
@@ -39,20 +43,13 @@ def login_required(func):
 
     return wrapper
 
-def PostSerializer(obj):
-    fields = ["id", "title", "content", "post_image", "is_deleted", "like_count", "created_at"]
-    values = [obj.id, obj.title, obj.content, obj.post_image, obj.is_deleted, obj.like_count, obj.created_at]
-
-    # data = dict(zip(fields,values))
-    data = {k:v for k,v in zip(fields,values)}
-    return data
 
 def get_all_posts(request):
     method = "GET"
     if not request.method == method:
         return JsonResponse({"message": "Not appropriate request method"}, status=405)
 
-    all_posts = Post.objects.all()
+    all_posts = Post.objects.all().order_by(F("created_at").desc())
     # all_posts = [PostSerializer(post) for post in all_posts]
     posts = []
     for post in all_posts:
@@ -63,14 +60,6 @@ def get_all_posts(request):
         posts.append(post)
 
     return JsonResponse({"message": "All posts", "data": posts})
-
-@login_required
-def get_user_post(request):
-    method = "GET"
-    if not request.method == method:
-        return JsonResponse({"message": "Not appropriate request method"}, status=405)
-    return JsonResponse({"message": "get user post request success"}, status=200)
-
 
 def get_post(request, post_id):
     try:
@@ -83,3 +72,35 @@ def get_post(request, post_id):
     posted_by = UserSerializer(posted_by)
     post["posted_by"] = posted_by
     return JsonResponse({"message": "Post", "data": post}, status=200)
+
+
+
+@csrf_exempt
+@login_required
+def create_post(request):
+    method = "POST" 
+    if not request.method == method:
+        return JsonResponse({"message": "Not appropriate request method"}, status=405)
+
+    data = json.loads(request.body)
+
+    print(request.body)
+
+    title = data.get("title")
+    content = data.get("content")
+    print(f"From post create_post: {title}, {content}")
+    try:
+        token = request.COOKIES.get("access_token")
+        payload = decode_jwt_token(token)
+        user_id = payload.get("id")
+
+        user = CustomUser.objects.get(pk=user_id)
+
+        new_post = user.create_post(title=title, content=content)
+
+        new_post = PostSerializer(new_post)
+    except:
+        return JsonResponse({"message": "Something went wrong"}, status=500)
+        
+
+    return JsonResponse({"message": "Post published", "data": new_post}, status=200)

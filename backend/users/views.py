@@ -10,6 +10,8 @@ from django.contrib.auth.hashers import check_password
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from .models import CustomUser
+from posts.serializer import PostSerializer
+from users.serializer import UserSerializer
 
 import json, jwt, math, time
 
@@ -55,13 +57,6 @@ def login_handle_cookie(request):
     return user
 
 
-def UserSerializer(obj):
-    fields = ["id", "email", "username", "fullname", "last_login", "date_joined"]
-    values = [obj.id, obj.email, obj.username, obj.get_fullname(), obj.last_login, obj.date_joined]
-
-    # data = dict(zip(fields,values))
-    data = {k:v for k,v in zip(fields,values)}
-    return data
 
 # check method
 def login_required(func):
@@ -202,3 +197,25 @@ def update_user(request):
     user_id = payload.get("id")
 
     return JsonResponse({"message": "update user request success"}, status=200)
+
+
+def get_posts(request, user_id):
+    method = "GET"
+    if not request.method == method:
+        return JsonResponse({"message": "not appropriate request"}, status=405)
+
+    try:
+        user = CustomUser.objects.get(pk=user_id)
+        posts = user.get_posts()
+    except:
+        return JsonResponse({"message": "User not Available"}, status=404)
+    
+    user = UserSerializer(user)
+    
+    user_posts = []
+    for post in posts:
+        post = PostSerializer(post)
+        post["user"] = user
+        user_posts.append(post)
+
+    return JsonResponse({"message": "User Post", "data": user_posts}, status=200)

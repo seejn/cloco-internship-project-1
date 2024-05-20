@@ -8,4 +8,6 @@ urlpatterns = [
     path("update/", views.update_user, name=""),
     
     path("signout/", views.sign_out, name=""),
+    
+    path("<int:user_id>/get_posts/", views.get_posts, name=""),
 ]
