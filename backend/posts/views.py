@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from django.db.models import F
 
 import json, jwt, math, time
@@ -11,35 +10,18 @@ from posts.serializer import PostSerializer
 from users.serializer import UserSerializer
 from .models import Post, Comment
 
+from tokens.models import Token
+from tokens.views import check_auth_token
 
-def decode_jwt_token(token):
-    payload = jwt.decode(token, "secret", algorithms=["HS256"])
-    return payload
 
-def token_validation(request):
-    token = request.COOKIES.get("access_token")
-
-    if not token:
-        return False
-
-    return decode_jwt_token(token)
-
+# check method
 def login_required(func):
     def wrapper(request, *args, **kwargs):
-        try:
-            payload = token_validation(request)
-            if not payload:
-                return JsonResponse({"message": "Login again"}, status=401)
-        except ExpiredSignatureError:
-            response = JsonResponse({"message": "Token Expired"}, status=400)
-            response.delete_cookie("access_token")
-            return response
-        except InvalidTokenError:
-            response = JsonResponse({"message": "Invalid token"}, status=400)
-            response.delete_cookie("access_token")
-            return response
-            
-        return func(request, *args, **kwargs)
+        
+        if check_auth_token(request):
+            return func(request, *args, **kwargs)
+
+        return JsonResponse({"message": "Authorization Failed"}, status=401)
 
     return wrapper
 
@@ -90,11 +72,7 @@ def create_post(request):
     content = data.get("content")
     print(f"From post create_post: {title}, {content}")
     try:
-        token = request.COOKIES.get("access_token")
-        payload = decode_jwt_token(token)
-        user_id = payload.get("id")
-
-        user = CustomUser.objects.get(pk=user_id)
+        user = check_auth_token(request)
 
         new_post = user.create_post(title=title, content=content)
 

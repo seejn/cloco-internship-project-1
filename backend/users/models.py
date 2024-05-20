@@ -3,6 +3,8 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db.models import F
 
+import secrets
+
 # Create your models here.
 class CustomUserManager(BaseUserManager):
 
@@ -54,6 +56,16 @@ class CustomUser(AbstractUser):
 
     def get_posts(self):
         return self.post.all().order_by(F("created_at").desc())
+
+    def create_token(self, t_type):
+        token = secrets.token_hex(32)
+        self.token.create(t_type=t_type, token=token)
+        return token
+
+    def delete_token(self, t_type):
+        token = self.token.get(t_type=t_type)
+        token.delete()
+        return token
 
     def __str__(self):
         return self.email

@@ -7,76 +7,28 @@ from django.db.utils import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.hashers import check_password
 
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from .models import CustomUser
+from tokens.models import Token
+from tokens.views import check_auth_token
+
 from posts.serializer import PostSerializer
 from users.serializer import UserSerializer
 
-import json, jwt, math, time
-
-
-def generate_token(t_type, data, expiry_in_seconds):
-    expiry = math.floor(time.time()) + expiry_in_seconds
-
-    payload = {
-        "token_type": t_type,
-        "id": data.get("id"),
-        "exp": expiry,
-        "iat": math.floor(time.time())
-    }
-
-    token = jwt.encode(payload, 'secret', algorithm="HS256")
-    return token
-
-def decode_jwt_token(token):
-    payload = jwt.decode(token, "secret", algorithms=["HS256"])
-    return payload
-
-def token_validation(request):
-    token = request.COOKIES.get("access_token")
-
-    if not token:
-        return False
-
-    return decode_jwt_token(token)
-
-def login_handle_cookie(request):
-    token = request.COOKIES.get("access_token")
-
-    if not token:
-        return False
-
-    payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-
-    print("paylaod", payload)
-    user_id = payload.get("id")
-    print("user_id", user_id)
-    user = CustomUser.objects.get(pk=user_id)
-
-    return user
-
+import json, secrets
 
 
 # check method
 def login_required(func):
     def wrapper(request, *args, **kwargs):
-        try:
-            payload = token_validation(request)
-            if not payload:
-                return JsonResponse({"message": "User not Authorized"}, status=401)
-        except ExpiredSignatureError:
-            response = JsonResponse({"message": "Token Expired"}, status=400)
-            response.delete_cookie("access_token")
-            return response
-        except InvalidTokenError:
-            response = JsonResponse({"message": "Invalid token"}, status=400)
-            response.delete_cookie("access_token")
-            return response
-            
-        return func(request, *args, **kwargs)
+        
+        if check_auth_token(request):
+            return func(request, *args, **kwargs)
+
+        return JsonResponse({"message": "Authorization Failed"}, status=401)
 
     return wrapper
+
 
 def authenticate(email, password):
     try:
@@ -97,20 +49,13 @@ def user_login(request):
     if not request.method == method:
         return JsonResponse({"message": "Not appropriate request method"}, status=405)
     
-    try:
-        user = login_handle_cookie(request)
-        if user:
-            user = UserSerializer(user)
-
-            return JsonResponse({"message": "Authentication with token", "data": user}, status=200)
-    except ExpiredSignatureError:
-        response = JsonResponse({"message": "Token Expired"}, status=400)
-        response.delete_cookie("access_token")
-        return response
-    except InvalidTokenError:
-        response = JsonResponse({"message": "Invalid token"}, status=400)
-        response.delete_cookie("access_token")
-        return response
+   
+    # CHECK FOR BEARER AUTH TOKEN
+    user = check_auth_token(request)
+    print("check auth token", user)
+    if user:
+        user = UserSerializer(user) 
+        return JsonResponse({"message": "Authentication with token", "data": user}, status=200)
 
     if not bool(request.body):
         return JsonResponse({"message": "Required fields not Found"}, status=400)
@@ -121,25 +66,31 @@ def user_login(request):
     password = data.get("password")
 
     user = authenticate(email, password)
+
     if not user:
         return JsonResponse({"message": "email or password is incorrect"}, status=401)
 
-    payload = {
-        "id": user.id
-    }
+    try:
+        token = user.create_token(t_type="auth")
+    except IntegrityError: 
+        return JsonResponse({"message": "Token already exists"}, status=400)
+
     user = UserSerializer(user)
-    token = generate_token("access", payload, 3600)
 
     response = JsonResponse({"message": "login success", "data": user}, status=200)
-    response.set_cookie("access_token", token)
+    response.set_cookie("auth_token", token)
     return response
 
 
 @login_required
 def sign_out(request):
     print("signout request hit")
+    user = check_auth_token(request)
+    user.delete_token("auth")
+    user.save()
+
     response = JsonResponse({"message": "You're signed out"}, status=200)
-    response.delete_cookie("access_token")
+    response.delete_cookie("auth_token")
     return response
 
 
@@ -178,10 +129,9 @@ def delete_user(request):
     if not request.method == method:
         return JsonResponse({"message": "not appropriate request"}, status=405)
     
-    token = request.COOKIES.get("token")
-    payload = decode_jwt_token(token)
-    user_id = payload.get("id")
-
+    user = check_auth_token(request)
+    user.delete()
+    user = UserSerializer(user)
 
     return JsonResponse({"message": "delete user request success"}, status=200)
 
@@ -191,12 +141,21 @@ def update_user(request):
     method = "PATCH"
     if not request.method == method:
         return JsonResponse({"message": "not appropriate request"}, status=405)
-    
-    token = request.COOKIES.get("token")
-    payload = decode_jwt_token(token)
-    user_id = payload.get("id")
 
-    return JsonResponse({"message": "update user request success"}, status=200)
+    data = json.loads(request.body)
+    
+    user = check_auth_token(request)
+
+    user.__dict__.update(data)
+    print(user)
+    print(data)
+
+    user.save()
+    print(user)
+
+    user = UserSerializer(user)
+
+    return JsonResponse({"message": "User Updated", "data": user}, status=200)
 
 
 def get_posts(request, user_id):
