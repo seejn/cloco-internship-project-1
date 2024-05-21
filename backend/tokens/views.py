@@ -7,6 +7,7 @@ from .models import Token
 def check_auth_token(request):
     try:
         token = request.headers.get("Authorization").split(" ")[1]
+        print("token", token)
         user_token = Token.objects.get(token=token)
         print("token", user_token)
         if user_token.is_token_expired():

@@ -8,7 +8,7 @@ import math, time
 # Create your models here.
 class Token(models.Model):
 
-    expiry_time = math.floor(time.time()) + 3600
+    expiry_time = math.floor(time.time()) + 84600
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="token")
     t_type = models.CharField(max_length=50, null=True, unique=True)
@@ -20,6 +20,8 @@ class Token(models.Model):
 
     def is_token_expired(self):
         curr_time = math.floor(time.time())
+        print("curr-time", curr_time)
+        print("expiry_time", self.expiry)
         if curr_time > self.expiry:
             self.delete()
             return True

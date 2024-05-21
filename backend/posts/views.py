@@ -82,3 +82,20 @@ def create_post(request):
         
 
     return JsonResponse({"message": "Post published", "data": new_post}, status=200)
+
+@csrf_exempt
+@login_required
+def delete_post(request, post_id):
+    method = "DELETE" 
+    if not request.method == method:
+        return JsonResponse({"message": "Not appropriate request method"}, status=405)
+    
+    try:
+        post = Post.objects.get(pk=post_id)
+        post.delete()
+        posts = Post.objects.all()
+        posts = [PostSerializer(post) for post in posts]
+    except:
+        return JsonResponse({"message": "Something went wrong"}, status=500)
+
+    return JsonResponse({"message": "Delete Post success", "data": posts}, status=200)

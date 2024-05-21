@@ -77,8 +77,7 @@ def user_login(request):
 
     user = UserSerializer(user)
 
-    response = JsonResponse({"message": "login success", "data": user}, status=200)
-    response.set_cookie("auth_token", token)
+    response = JsonResponse({"message": "login success", "token": token, "data": user}, status=200)
     return response
 
 
@@ -90,7 +89,6 @@ def sign_out(request):
     user.save()
 
     response = JsonResponse({"message": "You're signed out"}, status=200)
-    response.delete_cookie("auth_token")
     return response
 
 
