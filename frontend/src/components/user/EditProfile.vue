@@ -1,7 +1,7 @@
 <template>
-    <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg ">
         <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Profile</h2>
-        <form action="#" method="POST">
+        <form @submit.prevent="saveChanges">
           
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="profilePicture">
@@ -15,23 +15,44 @@
 
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
-                    Name
+                    First Name
                 </label>
-                <input class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="name" name="name" value="John Doe">
+                <input v-model="updatedUser.first_name" class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="name" >
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                    Last Name
+                </label>
+                <input v-model="updatedUser.last_name" class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="name" >
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                    Username
+                </label>
+                <input v-model="updatedUser.username" class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="name" >
             </div>
 
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
                     Email
                 </label>
-                <input class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" type="email" id="email" name="email" value="john.doe@example.com">
+                <input v-model="updatedUser.email" class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" type="email" id="email" >
             </div>
 
             <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="bio">
-                    Bio
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                    Contact
                 </label>
-                <textarea class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" id="bio" name="bio" rows="4" placeholder="Tell us a little about yourself...">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin vel urna nec risus ultricies dictum non nec nulla.</textarea>
+                <input v-model="updatedUser.contact" class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="name" >
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                    Address
+                </label>
+                <input v-model="updatedUser.address" class="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" type="text" id="name" >
             </div>
 
             <div class="mb-6">
@@ -44,3 +65,69 @@
     </div>
 
 </template>
+
+<script>
+    import axios from 'axios'
+
+    export default {
+        data() {
+            return {
+                updatedUser: {
+                    first_name: null,
+                    last_name: null,
+                    username: null,
+                    contact: null,
+                    address: null,
+                    email: null,
+                }
+            }
+        },
+        methods: {
+            seperateFullname(fullname) {
+                this.updatedUser.first_name = fullname.split(" ")[0]
+                this.updatedUser.last_name = fullname.split(" ")[1]
+            },
+            setUserInfo() {
+                this.updatedUser.username = this.user.username
+                this.updatedUser.contact = this.user.contact
+                this.updatedUser.address = this.user.address
+                this.updatedUser.email = this.user.email
+            },
+            async saveChanges() {
+                await axios(`${import.meta.env.VITE_BASE_URL}/user/update/`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${import.meta.env.VITE_AUTH_TOKEN}`
+                    },
+                    data: this.updatedUser
+                })
+                .then((response) => {
+                    console.log(response.data)
+                    this.$store.commit("addToast", {
+                        title: response.statusText,
+                        isError: false,
+                        message: response.data.message
+                    })
+                    this.$store.commit("setUser", response.data.data)
+                    this.$emit("handleSubmit")
+                })
+                .catch((error) => {
+                    this.$store.commit("addToast", {
+                        title: error.response.statusText,
+                        isError: true,
+                        message: error.response.data.message
+                    })
+                })
+            }
+        },
+        computed: {
+            user() {
+                return this.$store.state.user
+            }
+        },
+        mounted() {
+            this.seperateFullname(this.user.fullname)
+            this.setUserInfo()
+        }
+    }
+</script>

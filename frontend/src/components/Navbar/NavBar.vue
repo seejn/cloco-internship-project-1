@@ -13,7 +13,7 @@
                     </div>
                     <div class="hidden sm:ml-6 sm:block">
                     <div class="flex space-x-4">
-                        <a href="#" class="bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium" aria-current="page">Dashboard</a>
+                        <RouterLink to="/" class="bg-gray-900 text-white rounded-md px-3 py-2 text-sm font-medium" aria-current="page">Home</RouterLink>
                     </div>
                     </div>
                 </div>
@@ -27,22 +27,12 @@
 </template>
 
 <script>
+
     export default {
-        data() {
-            return {
-                profileIcon: true
-            }
-        },
-        methods: {
-            toggleMenu() {
-                this.profileIcon = !this.profileIcon
-            }
-        },
-        computed: {
-            menuToggleClassObject() {
-                return{
-                    "hidden": this.profileIcon
-                }
+        mounted() {
+            if(!this.$store.state.user) this.$store.dispatch("fetchUser")
+            else {
+                this.$router.push('/dashboard')
             }
         }
     }

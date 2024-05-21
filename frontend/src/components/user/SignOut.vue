@@ -4,6 +4,7 @@
     export default {
         methods: {
             redirectToRoot(title, message) {
+                this.$store.commit("setUser", null)
                 this.$store.commit("addToast", {
                         title: title,
                         isError: true,
@@ -14,6 +15,9 @@
             async signOut() {
                 await axios(`${import.meta.env.VITE_BASE_URL}/user/signout/`, {
                     method: 'get',
+                    headers: {
+                        'Authorization': `Bearer ${import.meta.env.VITE_AUTH_TOKEN}`
+                    },
                     withCredentials: true
                 })
                 .then((response) => {

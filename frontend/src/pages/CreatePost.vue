@@ -1,7 +1,6 @@
 <template>
     <UserNavBar />
     <CreatePostComponent />   
-    createpost 
 </template>
 
 <script>

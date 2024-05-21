@@ -11,6 +11,6 @@
         components: {
             UserNavBar,
             ProfileComponent,
-        }
-    }
+        },
+    } 
 </script>

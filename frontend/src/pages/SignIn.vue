@@ -127,7 +127,7 @@
                 })
                 .then((response) => {
                     console.log(response)
-                    this.$store.commit("addUser", response.data.data)
+                    this.$store.commit("setUser", response.data.data)
                     this.$store.commit("addToast", {
                         title: "Login Success",
                         isError: false,
